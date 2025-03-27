@@ -9,8 +9,8 @@
 static const std::u16string sClassName(u"SecureStorage");
 static const std::u16string sVersion(u"1.0");
 
-static const std::array<std::u16string, CAddInNative::eMethLast> osMethods = { u"getvalue"};
-static const std::array<std::u16string, CAddInNative::eMethLast> osMethods_ru = { u"получитьзначение"};
+static const std::array<std::u16string, CAddInNative::eMethLast> osMethods = { u"getvalue",u"addvalue"};
+static const std::array<std::u16string, CAddInNative::eMethLast> osMethods_ru = { u"получитьзначение",u"добавитьзначение"};
 static const std::array<std::u16string, CAddInNative::ePropLast> osProps = {};
 static const std::array<std::u16string, CAddInNative::ePropLast> osProps_ru = {};
 
@@ -202,8 +202,10 @@ long CAddInNative::GetNParams(const long lMethodNum)
 {
 	switch (lMethodNum)
 	{
-	case eMethGetValaue:
+	case eMethGetValue:
 		return 1;
+	case eMethAddValue:
+		return 2;
 	default:
 		return 0;
 	}
@@ -222,7 +224,7 @@ bool CAddInNative::HasRetVal(const long lMethodNum)
 {
 	switch (lMethodNum)
 	{
-	case eMethGetValaue:
+	case eMethGetValue:
 		return true;
 	default:
 		return false;
@@ -234,6 +236,30 @@ bool CAddInNative::HasRetVal(const long lMethodNum)
 bool CAddInNative::CallAsProc(const long lMethodNum,
 	tVariant* paParams, const long lSizeArray)
 {
+	switch (lMethodNum)
+	{
+	case eMethAddValue:
+	{
+		if (paParams[0].vt != VTYPE_PWSTR || paParams[1].vt != VTYPE_PWSTR)
+		{
+			return false;
+		}
+		const std::wstring valueName{paParams[0].pwstrVal, paParams[0].wstrLen };
+
+		CREDENTIALW cred = { 0 };
+		cred.Type = CRED_TYPE_GENERIC;
+		cred.TargetName = (LPWSTR)valueName.c_str();
+		cred.CredentialBlobSize = paParams[1].wstrLen * sizeof(wchar_t);
+		cred.CredentialBlob = (LPBYTE)paParams[1].pwstrVal;
+		cred.Persist = CRED_PERSIST_LOCAL_MACHINE;
+		cred.UserName = nullptr;
+
+		CredWriteW(&cred, 0);
+		return true;
+	}
+	default:
+		return false;
+	}
 	return true;
 }
 //---------------------------------------------------------------------------//
@@ -242,15 +268,14 @@ bool CAddInNative::CallAsFunc(const long lMethodNum,
 {
 	switch (lMethodNum)
 	{
-	case eMethGetValaue:
+	case eMethGetValue:
 	{
 		if (paParams[0].vt != VTYPE_PWSTR)
 		{
 			return false;
 		}
 		TV_VT(pvarRetValue) = VTYPE_PWSTR;
-		std::wstring valueName;
-		valueName.assign(paParams[0].pwstrVal, paParams[0].wstrLen);
+		std::wstring valueName{ paParams[0].pwstrVal, paParams[0].wstrLen};
 
 		std::wstring res;
 

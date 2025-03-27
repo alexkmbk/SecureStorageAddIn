@@ -44,7 +44,8 @@ public:
 
     enum Methods
     {
-        eMethGetValaue = 0,
+        eMethGetValue = 0,
+        eMethAddValue,
         eMethLast      // Always last
     };
 
